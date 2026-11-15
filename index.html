@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="refresh" content="600" />
+  <meta http-equiv="Cache-Control" content="no-cache" />
+  <meta name="theme-color" content="#0f1419" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Yield Sim" />
+  <meta name="application-name" content="Yield Sim" />
+  <meta name="description" content="Justin's paper-trading stablecoin yield dashboard. Simulation only — no real funds." />
+  <title>Stablecoin Yield Paper Portfolio — Justin</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <style>
+    :root {
+      color-scheme: dark light;
+      --bg: #0f1419;
+      --bg-elev: #171d24;
+      --text: #e7ecf1;
+      --muted: #9aa8b5;
+      --line: #2a343e;
+      --accent: #6ee7b7;
+      --accent-2: #7dd3fc;
+      --up: #34d399;
+      --down: #f87171;
+      --warn: #fbbf24;
+      --link: #7dd3fc;
+      --shadow: 0 0 0 1px var(--line);
+      font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f4f6f8;
+        --bg-elev: #ffffff;
+        --text: #14202b;
+        --muted: #5b6b78;
+        --line: #d5dee6;
+        --accent: #0f9f6e;
+        --accent-2: #0369a1;
+        --up: #047857;
+        --down: #b91c1c;
+        --warn: #b45309;
+        --link: #0369a1;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      font-size: 17px;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    header, main, footer {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+    }
+    header { padding-top: max(24px, env(safe-area-inset-top)); padding-bottom: 8px; }
+    h1 { font-size: 1.55rem; font-weight: 650; letter-spacing: -0.02em; margin: 0 0 8px; line-height: 1.25; }
+    .sub, .meta, .muted { color: var(--muted); }
+    .sub, .meta, .deadline { margin: 0 0 6px; }
+    .banner {
+      display: inline-block;
+      background: var(--bg-elev);
+      box-shadow: var(--shadow);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin: 8px 0 16px;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 20px 0 28px;
+    }
+    @media (min-width: 800px) {
+      .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    .metric {
+      background: var(--bg-elev);
+      box-shadow: var(--shadow);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .metric .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .metric .value { font-size: 1.45rem; font-weight: 650; margin-top: 4px; font-variant-numeric: tabular-nums; word-break: break-word; }
+    .up { color: var(--up); }
+    .down { color: var(--down); }
+    h2 { font-size: 1.15rem; margin: 28px 0 10px; font-weight: 650; }
+    .panel {
+      background: var(--bg-elev);
+      box-shadow: var(--shadow);
+      border-radius: 12px;
+      padding: 8px 0;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+    th, td { padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
+    td { border-bottom: 1px solid var(--line); }
+    tr:last-child td { border-bottom: 0; }
+    td.num, th.num { text-align: right; }
+    td.nowrap { white-space: nowrap; }
+    td.tag, .tag { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; color: var(--accent-2); white-space: nowrap; }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .chart-wrap { background: var(--bg-elev); box-shadow: var(--shadow); border-radius: 12px; padding: 12px 8px 8px; }
+    svg.chart { width: 100%; height: auto; display: block; }
+    svg.chart .grid line { stroke: var(--line); stroke-width: 1; }
+    svg.chart .line { fill: none; stroke: var(--accent); stroke-width: 2.25; }
+    svg.chart .area { fill: var(--accent); opacity: 0.12; }
+    svg.chart .dots circle { fill: var(--accent); }
+    svg.chart .axis text { fill: var(--muted); font-size: 10px; }
+    svg.chart .ref { stroke: var(--muted); stroke-dasharray: 4 4; stroke-width: 1; }
+    svg.chart .ref-label { fill: var(--muted); font-size: 10px; }
+    .note { font-size: 0.95rem; color: var(--muted); margin: 10px 0 0; }
+    footer { padding-top: 24px; padding-bottom: max(32px, env(safe-area-inset-bottom)); color: var(--muted); font-size: 0.9rem; }
+    .deadline { margin: 4px 0 0; }
+    .deadline.due { color: var(--warn); }
+    .cards { display: none; }
+    .pos-card, .log-card {
+      background: var(--bg-elev);
+      box-shadow: var(--shadow);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .pos-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; font-weight: 650; }
+    .pos-value { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .pos-meta { color: var(--muted); margin: 4px 0 10px; font-size: 0.92rem; }
+    .pos-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 0; }
+    .pos-card dt { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .pos-card dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .log-top { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+    .log-card time { color: var(--muted); font-size: 0.85rem; }
+    .log-card p { margin: 0; }
+    .install-hint { margin-top: 12px; }
+    @media (max-width: 800px) {
+      .desktop-only { display: none; }
+      .cards { display: grid; gap: 10px; }
+      h1 { font-size: 1.45rem; }
+      .metric .value { font-size: 1.35rem; }
+    }
+    @media (min-width: 801px) {
+      body { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="banner">Paper trading only — no real funds, wallets, or transactions</div>
+    <h1>Stablecoin yield paper portfolio</h1>
+    <p class="sub">Justin · Spruce Grove, Alberta · $1,000 USDC starting capital · DefiLlama yields</p>
+    <p class="meta">Last updated: Sun, Nov 15, 2026, 3:55:17 PM Mountain Time (UTC-06:00)</p>
+    <p class="meta">Started: Sun, Nov 15, 2026, 3:38:46 PM Mountain Time (UTC-06:00)</p>
+    <p class="deadline">48-hour evaluation deadline: Tue, Nov 17, 2026, 3:38:46 PM Mountain Time (UTC-06:00) (47.6 hours remaining).</p>
+  </header>
+  <main>
+    <section class="metrics" aria-label="Portfolio summary">
+      <div class="metric"><div class="label">Total value</div><div class="value">$990.00</div></div>
+      <div class="metric"><div class="label">P&amp;L</div><div class="value down">-$10.00 (-1.000%)</div></div>
+      <div class="metric"><div class="label">Blended APY</div><div class="value">4.172%</div></div>
+      <div class="metric"><div class="label">Projected annual yield</div><div class="value">$41.30</div></div>
+    </section>
+
+    <h2>Positions</h2>
+    <div class="panel desktop-only">
+      <table>
+        <thead>
+          <tr>
+            <th>Protocol</th>
+            <th>Chain</th>
+            <th>Pool</th>
+            <th class="num">Allocation</th>
+            <th class="num">Value</th>
+            <th class="num">Effective APY</th>
+            <th class="num">APY detail</th>
+            <th class="num">TVL</th>
+            <th class="num">Accrued</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Morpho</td><td>Base</td><td><a href="https://defillama.com/yields/pool/e0672197-9f3e-4414-bca5-e6b4c90aa469">Morpho Gauntlet USDC Prime (Base)</a></td><td class='num'>25.17%</td><td class='num'>$249.18</td><td class='num'>4.504%</td><td class='num muted'>4.504% base</td><td class='num'>$398.3M</td><td class='num'>$0.00</td></tr><tr><td>Aave v3</td><td>Ethereum</td><td><a href="https://defillama.com/yields/pool/19d024ed-9c70-4323-9a81-fe873ea5f0e0">Aave v3 sGHO (Ethereum)</a></td><td class='num'>20.39%</td><td class='num'>$201.86</td><td class='num'>4.500%</td><td class='num muted'>4.500% base</td><td class='num'>$205.8M</td><td class='num'>$0.00</td></tr><tr><td>Compound v3</td><td>Ethereum</td><td><a href="https://defillama.com/yields/pool/7da72d09-56ca-4ec5-a45f-59114353e487">Compound v3 USDC (Ethereum)</a></td><td class='num'>12.62%</td><td class='num'>$124.91</td><td class='num'>3.221%</td><td class='num muted'>3.221% base</td><td class='num'>$37.2M</td><td class='num'>$0.00</td></tr><tr><td>Morpho</td><td>Base</td><td><a href="https://defillama.com/yields/pool/a5fab52f-73fa-4f44-9c09-9af1eb20996c">Morpho Spark USDC (Base)</a></td><td class='num'>22.71%</td><td class='num'>$224.79</td><td class='num'>4.043%</td><td class='num muted'>4.043% base</td><td class='num'>$365.3M</td><td class='num'>$0.00</td></tr><tr><td>Aave v3</td><td>Ethereum</td><td><a href="https://defillama.com/yields/pool/aa70268e-4b52-42bf-a116-608b370f9501">Aave v3 USDC (Ethereum)</a></td><td class='num'>19.12%</td><td class='num'>$189.25</td><td class='num'>4.165%</td><td class='num muted'>4.165% base</td><td class='num'>$160.6M</td><td class='num'>$0.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cards"><article class='pos-card'><div class='pos-head'><a href="https://defillama.com/yields/pool/e0672197-9f3e-4414-bca5-e6b4c90aa469">Morpho Gauntlet USDC Prime (Base)</a><span class='pos-value'>$249.18</span></div><div class='pos-meta'>Morpho · Base</div><dl><div><dt>Allocation</dt><dd>25.17%</dd></div><div><dt>Effective APY</dt><dd>4.504%</dd></div><div><dt>APY detail</dt><dd>4.504% base</dd></div><div><dt>TVL</dt><dd>$398.3M</dd></div><div><dt>Accrued</dt><dd>$0.00</dd></div></dl></article><article class='pos-card'><div class='pos-head'><a href="https://defillama.com/yields/pool/19d024ed-9c70-4323-9a81-fe873ea5f0e0">Aave v3 sGHO (Ethereum)</a><span class='pos-value'>$201.86</span></div><div class='pos-meta'>Aave v3 · Ethereum</div><dl><div><dt>Allocation</dt><dd>20.39%</dd></div><div><dt>Effective APY</dt><dd>4.500%</dd></div><div><dt>APY detail</dt><dd>4.500% base</dd></div><div><dt>TVL</dt><dd>$205.8M</dd></div><div><dt>Accrued</dt><dd>$0.00</dd></div></dl></article><article class='pos-card'><div class='pos-head'><a href="https://defillama.com/yields/pool/7da72d09-56ca-4ec5-a45f-59114353e487">Compound v3 USDC (Ethereum)</a><span class='pos-value'>$124.91</span></div><div class='pos-meta'>Compound v3 · Ethereum</div><dl><div><dt>Allocation</dt><dd>12.62%</dd></div><div><dt>Effective APY</dt><dd>3.221%</dd></div><div><dt>APY detail</dt><dd>3.221% base</dd></div><div><dt>TVL</dt><dd>$37.2M</dd></div><div><dt>Accrued</dt><dd>$0.00</dd></div></dl></article><article class='pos-card'><div class='pos-head'><a href="https://defillama.com/yields/pool/a5fab52f-73fa-4f44-9c09-9af1eb20996c">Morpho Spark USDC (Base)</a><span class='pos-value'>$224.79</span></div><div class='pos-meta'>Morpho · Base</div><dl><div><dt>Allocation</dt><dd>22.71%</dd></div><div><dt>Effective APY</dt><dd>4.043%</dd></div><div><dt>APY detail</dt><dd>4.043% base</dd></div><div><dt>TVL</dt><dd>$365.3M</dd></div><div><dt>Accrued</dt><dd>$0.00</dd></div></dl></article><article class='pos-card'><div class='pos-head'><a href="https://defillama.com/yields/pool/aa70268e-4b52-42bf-a116-608b370f9501">Aave v3 USDC (Ethereum)</a><span class='pos-value'>$189.25</span></div><div class='pos-meta'>Aave v3 · Ethereum</div><dl><div><dt>Allocation</dt><dd>19.12%</dd></div><div><dt>Effective APY</dt><dd>4.165%</dd></div><div><dt>APY detail</dt><dd>4.165% base</dd></div><div><dt>TVL</dt><dd>$160.6M</dd></div><div><dt>Accrued</dt><dd>$0.00</dd></div></dl></article></div>
+    <p class="note">Effective APY prefers organic <code>apyBase</code> and applies a 50% haircut to reward APY. Simulated entry/move gas is deducted (about $0.50 on L2s, $3.00 on Ethereum). Entry costs currently sitting in open positions: $10.00. Max 40% per pool. TVL floor $10M (prefer $50M+).</p>
+
+    <h2>Value over time</h2>
+    <div class="chart-wrap"><svg class="chart" viewBox="0 0 720 240" role="img" aria-label="Portfolio value over time">
+  <g class="grid"><line x1="56" y1="204.00" x2="704" y2="204.00" /><line x1="56" y1="157.00" x2="704" y2="157.00" /><line x1="56" y1="110.00" x2="704" y2="110.00" /><line x1="56" y1="63.00" x2="704" y2="63.00" /><line x1="56" y1="16.00" x2="704" y2="16.00" /></g>
+  <line class="ref" x1="56" y1="42.86" x2="704" y2="42.86" /><text class="ref-label" x="704" y="36.86" text-anchor="end">$1,000 start</text>
+  <path class="area" d="M56.00,177.14 L57.30,177.14 L704.00,177.13 L704.00,204.00 L56.00,204.00 Z" />
+  <path class="line" d="M56.00,177.14 L57.30,177.14 L704.00,177.13" />
+  <g class="dots"><circle cx="56.00" cy="177.14" r="3.5" /><circle cx="57.30" cy="177.14" r="3.5" /><circle cx="704.00" cy="177.13" r="3.5" /></g>
+  <g class="axis"><text x="48" y="208.00" text-anchor="end">$988.00</text><text x="48" y="161.00" text-anchor="end">$991.50</text><text x="48" y="114.00" text-anchor="end">$995.00</text><text x="48" y="67.00" text-anchor="end">$998.50</text><text x="48" y="20.00" text-anchor="end">$1,002.00</text><text x="56" y="230" text-anchor="start">Nov 15, 3:38 PM</text><text x="704" y="230" text-anchor="end">Nov 15, 3:55 PM</text></g>
+</svg></div>
+    <p class="note">Chart times are Mountain Time (America/Edmonton). The dashed line is the $1,000 starting capital. Early P&amp;L is usually slightly negative because simulated gas is paid up front.</p>
+
+    <h2>Transaction and rebalance log</h2>
+    <div class="panel desktop-only">
+      <table>
+        <thead>
+          <tr><th>Time (Mountain)</th><th>Action</th><th>Reason</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class='nowrap'>Sun, Nov 15, 2026, 3:55:17 PM Mountain Time (UTC-06:00)</td><td class='tag'>rebalance_skip</td><td>Did not move Aave v3 USDC (Ethereum) (4.165%) to Aave v3 USDC (Base) (4.990%, +0.824 pp): $3.50 move costs would take 819.1 days to break even (limit 30 days).</td></tr><tr><td class='nowrap'>Sun, Nov 15, 2026, 3:55:17 PM Mountain Time (UTC-06:00)</td><td class='tag'>rebalance_skip</td><td>Did not move Morpho Spark USDC (Base) (4.043%) to Morpho Gauntlet USDC Frontier (Ethereum) (7.133%, +3.090 pp): $3.50 move costs would take 183.9 days to break even (limit 30 days).</td></tr><tr><td class='nowrap'>Sun, Nov 15, 2026, 3:55:17 PM Mountain Time (UTC-06:00)</td><td class='tag'>rebalance_skip</td><td>Did not move Morpho Gauntlet USDC Prime (Base) (4.504%) to Morpho Gauntlet USDC Frontier (Ethereum) (7.133%, +2.629 pp): $3.50 move costs would take 195.0 days to break even (limit 30 days).</td></tr><tr><td class='nowrap'>Sun, Nov 15, 2026, 3:55:17 PM Mountain Time (UTC-06:00)</td><td class='tag'>accrue</td><td>Accrued yield at current effective APYs: Morpho Gauntlet USDC Prime (Base): +$0.000351 over 0.0114d @ 4.504%; Aave v3 sGHO (Ethereum): +$0.000284 over 0.0114d @ 4.500%; Compound v3 USDC (Ethereum): +$0.000126 over 0.0114d @ 3.221%; Morpho Spark USDC (Base): +$0.000285 over 0.0114d @ 4.043%; Aave v3 USDC (Ethereum): +$0.000247 over 0.0114d @ 4.165%</td></tr><tr><td class='nowrap'>Sun, Nov 15, 2026, 3:38:48 PM Mountain Time (UTC-06:00)</td><td class='tag'>rebalance_skip</td><td>Did not move Aave v3 USDC (Ethereum, 4.165%) to Aave v3 USDC (Base, 4.990%, +0.824 pp): $3.50 move costs would take 819.1 days to break even (limit 30 days).</td></tr><tr><td class='nowrap'>Sun, Nov 15, 2026, 3:38:48 PM Mountain Time (UTC-06:00)</td><td class='tag'>rebalance_skip</td><td>Did not move Morpho Spark USDC (4.043%) to Morpho Gauntlet USDC Frontier (7.133%, +3.090 pp): $3.50 move costs would take 183.9 days to break even (limit 30 days).</td></tr><tr><td class='nowrap'>Sun, Nov 15, 2026, 3:38:48 PM Mountain Time (UTC-06:00)</td><td class='tag'>rebalance_skip</td><td>Did not move Morpho Gauntlet USDC Prime (4.504%) to Morpho Gauntlet USDC Frontier (7.133%, +2.629 pp): $3.50 move costs would take 195.0 days to break even (limit 30 days).</td></tr><tr><td class='nowrap'>Sun, Nov 15, 2026, 3:38:48 PM Mountain Time (UTC-06:00)</td><td class='tag'>accrue</td><td>Accrued yield at current effective APYs: Morpho Gauntlet USDC Prime: +$0.000001 over 0.0000d @ 4.504%; Aave v3 sGHO: +$0.000001 over 0.0000d @ 4.500%; Compound v3 USDC: +$0.000000 over 0.0000d @ 3.221%; Morpho Spark USDC: +$0.000001 over 0.0000d @ 4.043%; Aave v3 USDC: +$0.000001 over 0.0000d @ 4.165%</td></tr><tr><td class='nowrap'>Sun, Nov 15, 2026, 3:38:46 PM Mountain Time (UTC-06:00)</td><td class='tag'>init</td><td>Opened a $1,000 USDC paper portfolio across 5 low-risk stablecoin pools. Simulated entry gas deducted. Morpho Gauntlet USDC Prime on Base: 24.97% sleeve, gross $249.68, minus $0.50 simulated gas, net $249.18 at 4.504% effective APY (base 4.504%, reward 0.000%), TVL $398.3M. Aave v3 sGHO on Ethereum: 20.49% sleeve, gross $204.86, minus $3.00 simulated gas, net $201.86 at 4.500% effective APY (base 4.500%, reward 0.000%), TVL $205.8M. Compound v3 USDC on Ethereum: 12.79% sleeve, gross $127.91, minus $3.00 simulated gas, net $124.91 at 3.221% effective APY (base 3.221%, reward 0.000%), TVL $37.2M. Morpho Spark USDC on Base: 22.53% sleeve, gross $225.29, minus $0.50 simulated gas, net $224.79 at 4.043% effective APY (base 4.043%, reward 0.000%), TVL $365.3M. Aave v3 USDC on Ethereum: 19.23% sleeve, gross $192.25, minus $3.00 simulated gas, net $189.25 at 4.165% effective APY (base 4.165%, reward 0.000%), TVL $160.6M.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cards"><article class='log-card'><div class='log-top'><span class='tag'>rebalance_skip</span><time>Sun, Nov 15, 2026, 3:55:17 PM Mountain Time (UTC-06:00)</time></div><p>Did not move Aave v3 USDC (Ethereum) (4.165%) to Aave v3 USDC (Base) (4.990%, +0.824 pp): $3.50 move costs would take 819.1 days to break even (limit 30 days).</p></article><article class='log-card'><div class='log-top'><span class='tag'>rebalance_skip</span><time>Sun, Nov 15, 2026, 3:55:17 PM Mountain Time (UTC-06:00)</time></div><p>Did not move Morpho Spark USDC (Base) (4.043%) to Morpho Gauntlet USDC Frontier (Ethereum) (7.133%, +3.090 pp): $3.50 move costs would take 183.9 days to break even (limit 30 days).</p></article><article class='log-card'><div class='log-top'><span class='tag'>rebalance_skip</span><time>Sun, Nov 15, 2026, 3:55:17 PM Mountain Time (UTC-06:00)</time></div><p>Did not move Morpho Gauntlet USDC Prime (Base) (4.504%) to Morpho Gauntlet USDC Frontier (Ethereum) (7.133%, +2.629 pp): $3.50 move costs would take 195.0 days to break even (limit 30 days).</p></article><article class='log-card'><div class='log-top'><span class='tag'>accrue</span><time>Sun, Nov 15, 2026, 3:55:17 PM Mountain Time (UTC-06:00)</time></div><p>Accrued yield at current effective APYs: Morpho Gauntlet USDC Prime (Base): +$0.000351 over 0.0114d @ 4.504%; Aave v3 sGHO (Ethereum): +$0.000284 over 0.0114d @ 4.500%; Compound v3 USDC (Ethereum): +$0.000126 over 0.0114d @ 3.221%; Morpho Spark USDC (Base): +$0.000285 over 0.0114d @ 4.043%; Aave v3 USDC (Ethereum): +$0.000247 over 0.0114d @ 4.165%</p></article><article class='log-card'><div class='log-top'><span class='tag'>rebalance_skip</span><time>Sun, Nov 15, 2026, 3:38:48 PM Mountain Time (UTC-06:00)</time></div><p>Did not move Aave v3 USDC (Ethereum, 4.165%) to Aave v3 USDC (Base, 4.990%, +0.824 pp): $3.50 move costs would take 819.1 days to break even (limit 30 days).</p></article><article class='log-card'><div class='log-top'><span class='tag'>rebalance_skip</span><time>Sun, Nov 15, 2026, 3:38:48 PM Mountain Time (UTC-06:00)</time></div><p>Did not move Morpho Spark USDC (4.043%) to Morpho Gauntlet USDC Frontier (7.133%, +3.090 pp): $3.50 move costs would take 183.9 days to break even (limit 30 days).</p></article><article class='log-card'><div class='log-top'><span class='tag'>rebalance_skip</span><time>Sun, Nov 15, 2026, 3:38:48 PM Mountain Time (UTC-06:00)</time></div><p>Did not move Morpho Gauntlet USDC Prime (4.504%) to Morpho Gauntlet USDC Frontier (7.133%, +2.629 pp): $3.50 move costs would take 195.0 days to break even (limit 30 days).</p></article><article class='log-card'><div class='log-top'><span class='tag'>accrue</span><time>Sun, Nov 15, 2026, 3:38:48 PM Mountain Time (UTC-06:00)</time></div><p>Accrued yield at current effective APYs: Morpho Gauntlet USDC Prime: +$0.000001 over 0.0000d @ 4.504%; Aave v3 sGHO: +$0.000001 over 0.0000d @ 4.500%; Compound v3 USDC: +$0.000000 over 0.0000d @ 3.221%; Morpho Spark USDC: +$0.000001 over 0.0000d @ 4.043%; Aave v3 USDC: +$0.000001 over 0.0000d @ 4.165%</p></article><article class='log-card'><div class='log-top'><span class='tag'>init</span><time>Sun, Nov 15, 2026, 3:38:46 PM Mountain Time (UTC-06:00)</time></div><p>Opened a $1,000 USDC paper portfolio across 5 low-risk stablecoin pools. Simulated entry gas deducted. Morpho Gauntlet USDC Prime on Base: 24.97% sleeve, gross $249.68, minus $0.50 simulated gas, net $249.18 at 4.504% effective APY (base 4.504%, reward 0.000%), TVL $398.3M. Aave v3 sGHO on Ethereum: 20.49% sleeve, gross $204.86, minus $3.00 simulated gas, net $201.86 at 4.500% effective APY (base 4.500%, reward 0.000%), TVL $205.8M. Compound v3 USDC on Ethereum: 12.79% sleeve, gross $127.91, minus $3.00 simulated gas, net $124.91 at 3.221% effective APY (base 3.221%, reward 0.000%), TVL $37.2M. Morpho Spark USDC on Base: 22.53% sleeve, gross $225.29, minus $0.50 simulated gas, net $224.79 at 4.043% effective APY (base 4.043%, reward 0.000%), TVL $365.3M. Aave v3 USDC on Ethereum: 19.23% sleeve, gross $192.25, minus $3.00 simulated gas, net $189.25 at 4.165% effective APY (base 4.165%, reward 0.000%), TVL $160.6M.</p></article></div>
+  </main>
+  <footer>
+    Simulation only. Yields are taken from the public DefiLlama API and will change. This is not financial advice.
+    This page refreshes automatically every 10 minutes.
+    <p class="install-hint">On Android Chrome, tap the menu and choose <strong>Add to Home screen</strong> for a one-tap app icon. The page contains only paper-trading numbers — no wallets or secrets.</p>
+    <p class="install-hint">Public URL: <a href="https://jtncr.github.io/yield-sim-dashboard/">https://jtncr.github.io/yield-sim-dashboard/</a></p>
+  </footer>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    }
+  </script>
+</body>
+</html>
